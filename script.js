@@ -507,7 +507,11 @@ function openConfig() {
   el.nameInput.value = state.contact ? state.contact.name : "";
   el.codeInput.value = state.contact ? groupCode(state.contact.code) : "";
   el.disconnectBtn.hidden = !state.contact;
-  setMsg("", "");
+  if (state.fatal) {
+    setMsg("err", state.fatalReason || "> ERROR: BACKEND SETUP FAILED. SEE TERMINAL.");
+  } else {
+    setMsg("", "");
+  }
   el.connectBtn.disabled = false;
   openDialog(el.config, state.contact ? el.nameInput : el.nameInput);
 }
@@ -538,8 +542,13 @@ el.nameInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.isComposing) {
     e.preventDefault();
     if (!el.codeInput.value.trim()) el.codeInput.focus();
-    else el.configForm.requestSubmit();
+    else connectContact();
   }
+});
+
+el.connectBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  connectContact();
 });
 
 el.configForm.addEventListener("submit", (e) => { e.preventDefault(); connectContact(); });
@@ -624,11 +633,11 @@ async function connectContact() {
   const name = cleanText(el.nameInput.value).replace(/\n/g, " ").trim();
   const code = el.codeInput.value.replace(/\D/g, "");
 
-  if (name.length < 1 || name.length > 16) { setMsg("err", "> ERROR: NAME REQUIRED (1–16 CHARACTERS)"); el.nameInput.focus(); return; }
-  if (code.length !== 16) { setMsg("err", "> ERROR: CODE MUST BE EXACTLY 16 DIGITS"); el.codeInput.focus(); return; }
-  if (code === state.myId) { setMsg("err", "> ERROR: THAT IS YOUR OWN CODE. ENTER THE OTHER PERSON'S CODE."); el.codeInput.focus(); return; }
   if (!isConfigured()) { setMsg("err", "> ERROR: FIREBASE IS NOT CONFIGURED. SEE script.js / README.md"); return; }
   if (!state.ready) { setMsg("err", state.fatal ? (state.fatalReason || "> ERROR: BACKEND SETUP FAILED. SEE TERMINAL.") : "> ERROR: STILL CONNECTING TO SERVER. TRY AGAIN IN A MOMENT."); return; }
+  if (name.length < 1 || name.length > 16) { setMsg("err", "> ERROR: CONTACT NAME REQUIRED (1–16 CHARACTERS)"); el.nameInput.focus(); return; }
+  if (code.length !== 16) { setMsg("err", "> ERROR: CODE MUST BE EXACTLY 16 DIGITS"); el.codeInput.focus(); return; }
+  if (code === state.myId) { setMsg("err", "> ERROR: THAT IS YOUR OWN CODE. ENTER THE OTHER PERSON'S CODE."); el.codeInput.focus(); return; }
 
   el.connectBtn.disabled = true;
   setMsg("", "> CONNECTING...");
@@ -880,8 +889,8 @@ async function boot() {
              "> CHECK databaseURL IN FIREBASE_CONFIG (FIREBASE CONSOLE → REALTIME DATABASE → DATA TAB, URL AT THE TOP) AND THAT THE DATABASE WAS CREATED."]);
     } else if (/permission_denied/i.test(m)) {
       fatal(["> ERROR: ACCESS DENIED BY DATABASE RULES.", "> PUBLISH database.rules.json IN FIREBASE CONSOLE → REALTIME DATABASE → RULES."]);
-    } else if (/operation-not-allowed|admin-restricted/i.test(m)) {
-      fatal(["> ERROR: ANONYMOUS SIGN-IN IS DISABLED.", "> ENABLE IT: FIREBASE CONSOLE → AUTHENTICATION → SIGN-IN METHOD → ANONYMOUS."]);
+    } else if (/operation-not-allowed|admin-restricted|configuration-not-found/i.test(m)) {
+      fatal(["> ERROR: ANONYMOUS SIGN-IN IS DISABLED OR NOT INITIALIZED.", "> IN FIREBASE CONSOLE: BUILD → AUTHENTICATION → GET STARTED → SIGN-IN METHOD → ENABLE ANONYMOUS."]);
     } else if (/unauthorized-domain/i.test(m)) {
       fatal(["> ERROR: THIS DOMAIN IS NOT AUTHORIZED.", "> ADD IT: FIREBASE CONSOLE → AUTHENTICATION → SETTINGS → AUTHORIZED DOMAINS."]);
     } else if (/import|fetch|module|load/i.test(m) && !state.ready) {
