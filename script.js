@@ -17,13 +17,17 @@
    ═══════════════════════════════════════════════════════════════ */
 
 // ▼▼▼  CONFIGURATION — EDIT THIS  ▼▼▼
-const FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  appId: "YOUR_APP_ID"
+const firebaseConfig = {
+  apiKey: "AIzaSyCXf2I-jzYsmibkzRyLLA1oSGUf07SnLco",
+  authDomain: "message-7413e.firebaseapp.com",
+  databaseURL: "https://message-7413e-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "message-7413e",
+  storageBucket: "message-7413e.firebasestorage.app",
+  messagingSenderId: "1050074453255",
+  appId: "1:1050074453255:web:e9dfac64e1b616f3dea1a2",
+  measurementId: "G-DGGYG5F2YN"
 };
+
 // ▲▲▲  END CONFIGURATION  ▲▲▲
 
 const SDK_VERSION = "10.14.1";
