@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <title>MESSAGE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app" id="app">
+    <div class="shell">
+
+      <header class="top">
+        <h1 class="logo">MESSAGE</h1>
+        <button class="btn" id="configBtn" type="button">CONFIGURE</button>
+      </header>
+
+      <div class="status" id="status" role="status" aria-live="polite">
+        <span class="stat-item"><span class="dot connecting" id="statusDot"></span><span id="statusText">CONNECTING</span></span>
+        <span class="sep" aria-hidden="true">│</span>
+        <span class="stat-item"><span class="muted">CONTACT:</span> <span id="contactName" class="contact-name">—</span></span>
+        <span class="sep" aria-hidden="true">│</span>
+        <span class="stat-item muted" id="peerState">PEER —</span>
+      </div>
+
+      <main class="terminal" id="terminal" aria-label="Terminal conversation">
+        <div class="output" id="output" aria-live="polite"></div>
+
+        <div class="line prompt" id="prompt" hidden>
+          <span class="pfx me">you@message~</span><span class="typed" id="typed"></span>
+          <textarea id="hiddenInput" rows="1" maxlength="1000"
+                    autocomplete="off" autocapitalize="sentences" autocorrect="off" spellcheck="false"
+                    enterkeyhint="send"
+                    aria-label="Type your message. Press Enter to send, Shift+Enter for a new line."></textarea>
+        </div>
+      </main>
+
+      <footer class="foot">
+        <span class="note">SESSION ONLY · NOTHING IS SAVED ON THIS DEVICE</span>
+        <span class="tools">
+          <button class="link" id="soundBtn" type="button" aria-pressed="true">SOUND: ON</button>
+          <button class="link" id="timeBtn" type="button" aria-pressed="true">TIME: ON</button>
+        </span>
+      </footer>
+
+    </div>
+  </div>
+
+  <!-- WELCOME (first run) -->
+  <div class="overlay" id="welcomeOverlay" aria-hidden="true">
+    <div class="win" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+      <div class="win-bar"><span class="win-title" id="welcomeTitle">welcome@message~</span></div>
+      <div class="win-body">
+        <p class="sys-text">&gt; NEW IDENTITY GENERATED</p>
+        <p class="label">YOUR PERSONAL CODE</p>
+        <div class="code-big" id="welcomeCode" aria-live="polite">0000 0000 0000 0000</div>
+        <p class="plain">Share this code with the person you want to connect with.</p>
+        <p class="small muted" id="welcomeNotice"></p>
+        <p class="small muted">Messages exist only while this page is open. Nothing is saved on this device, and the server copy is deleted as soon as it is delivered.</p>
+        <div class="actions">
+          <button class="btn" id="welcomeCopy" type="button">COPY CODE</button>
+          <button class="btn primary" id="welcomeContinue" type="button">CONTINUE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIGURE -->
+  <div class="overlay" id="configOverlay" aria-hidden="true">
+    <form class="win" id="configForm" role="dialog" aria-modal="true" aria-labelledby="configTitle" novalidate autocomplete="off">
+      <div class="win-bar"><span class="win-title" id="configTitle">configure@message~</span></div>
+      <div class="win-body">
+
+        <div class="mycode">
+          <span class="label">YOUR CODE</span>
+          <span class="mycode-row">
+            <span class="mycode-val" id="cfgMyCode">0000 0000 0000 0000</span>
+            <button class="btn small" id="cfgCopy" type="button">COPY</button>
+          </span>
+        </div>
+
+        <label class="label" for="contactNameInput">CONTACT NAME</label>
+        <div class="field">
+          <span class="field-prefix" aria-hidden="true">&gt;</span>
+          <input id="contactNameInput" type="text" maxlength="16" placeholder="e.g. Alex"
+                 autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="next">
+        </div>
+        <p class="hint">Your private nickname for them. It is only stored on this device.</p>
+
+        <label class="label" for="contactCodeInput">16-DIGIT USER CODE</label>
+        <div class="field">
+          <span class="field-prefix" aria-hidden="true">&gt;</span>
+          <input id="contactCodeInput" type="text" inputmode="numeric" maxlength="19" placeholder="0000 0000 0000 0000"
+                 autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go">
+        </div>
+        <p class="hint">Their code, not yours. Both people must enter each other's code.</p>
+
+        <p class="form-msg" id="configMsg" role="alert"></p>
+
+        <div class="actions">
+          <button class="btn danger" id="disconnectBtn" type="button" hidden>DISCONNECT</button>
+          <button class="btn" id="cancelBtn" type="button">CANCEL</button>
+          <button class="btn primary" id="connectBtn" type="submit">CONNECT</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>

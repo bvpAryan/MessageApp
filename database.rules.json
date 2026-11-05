@@ -1,0 +1,44 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      "$id": {
+        ".write": "auth != null && $id.matches(/^[0-9]{16}$/) && (!data.exists() || data.child('uid').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['uid', 'registered'])",
+        "uid": {
+          ".read": "auth != null && data.val() === auth.uid",
+          ".validate": "newData.val() === auth.uid"
+        },
+        "registered": {
+          ".read": "auth != null",
+          ".validate": "newData.val() === true"
+        },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "presence": {
+      "$id": {
+        ".read": "auth != null",
+        ".write": "auth != null && $id.matches(/^[0-9]{16}$/) && root.child('users').child($id).child('uid').val() === auth.uid",
+        ".validate": "newData.isBoolean()"
+      }
+    },
+
+    "inbox": {
+      "$to": {
+        ".read": "auth != null && root.child('users').child($to).child('uid').val() === auth.uid",
+        "$msg": {
+          ".write": "auth != null && $to.matches(/^[0-9]{16}$/) && root.child('users').child($to).exists() && ((!data.exists() && newData.exists()) || (data.exists() && !newData.exists() && (root.child('users').child($to).child('uid').val() === auth.uid || root.child('users').child(data.child('from').val()).child('uid').val() === auth.uid)))",
+          ".validate": "newData.hasChildren(['from', 'text', 'ts']) && root.child('users').child(newData.child('from').val()).child('uid').val() === auth.uid",
+          "from": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{16}$/)" },
+          "text": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000" },
+          "ts": { ".validate": "newData.val() === now" },
+          "$other": { ".validate": false }
+        }
+      }
+    }
+  }
+}
