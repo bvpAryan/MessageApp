@@ -428,8 +428,17 @@ function onStatusChange(prev, s) {
 window.addEventListener("online", () => { updateUI(); });
 window.addEventListener("offline", () => { updateUI(); });
 
+function withTimeout(promise, ms, label) {
+  let t;
+  const timeout = new Promise((_, rej) => {
+    t = setTimeout(() => rej(Object.assign(new Error(label || "timeout"), { code: "timeout" })), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
+}
+
 function friendlyError(e) {
   const m = `${(e && e.code) || ""} ${(e && e.message) || e || ""}`;
+  if (/timeout/i.test(m)) return "SERVER DID NOT RESPOND (CHECK databaseURL IN FIREBASE_CONFIG)";
   if (/permission_denied/i.test(m)) return "ACCESS DENIED BY SERVER RULES";
   if (/offline|network|disconnect|unavailable/i.test(m)) return "NETWORK ERROR";
   return "UNEXPECTED ERROR";
@@ -619,13 +628,13 @@ async function connectContact() {
   if (code.length !== 16) { setMsg("err", "> ERROR: CODE MUST BE EXACTLY 16 DIGITS"); el.codeInput.focus(); return; }
   if (code === state.myId) { setMsg("err", "> ERROR: THAT IS YOUR OWN CODE. ENTER THE OTHER PERSON'S CODE."); el.codeInput.focus(); return; }
   if (!isConfigured()) { setMsg("err", "> ERROR: FIREBASE IS NOT CONFIGURED. SEE script.js / README.md"); return; }
-  if (!state.ready) { setMsg("err", state.fatal ? "> ERROR: BACKEND SETUP FAILED. SEE TERMINAL." : "> ERROR: STILL CONNECTING TO SERVER. TRY AGAIN IN A MOMENT."); return; }
+  if (!state.ready) { setMsg("err", state.fatal ? (state.fatalReason || "> ERROR: BACKEND SETUP FAILED. SEE TERMINAL.") : "> ERROR: STILL CONNECTING TO SERVER. TRY AGAIN IN A MOMENT."); return; }
 
   el.connectBtn.disabled = true;
   setMsg("", "> CONNECTING...");
 
   try {
-    const snap = await fb.get(fb.ref(db, `users/${code}/registered`));
+    const snap = await withTimeout(fb.get(fb.ref(db, `users/${code}/registered`)), 10000, "lookup timeout");
     if (!snap.exists()) {
       setMsg("err", "> ERROR: CODE NOT FOUND. THE OTHER PERSON MUST OPEN MESSAGE AT LEAST ONCE FIRST.");
       return;
@@ -719,6 +728,7 @@ async function onDbConnected() {
 
 function fatal(lines) {
   state.fatal = true;
+  state.fatalReason = lines[0];
   lines.forEach((l) => sys(l, "err"));
   updateUI();
 }
@@ -745,14 +755,14 @@ async function initFirebase() {
 
   // Anonymous identity (persisted by Firebase Auth, so my uid is stable per browser).
   await auth.authStateReady();
-  if (!auth.currentUser) await authMod.signInAnonymously(auth);
+  if (!auth.currentUser) await withTimeout(authMod.signInAnonymously(auth), 15000, "auth timeout");
   state.uid = auth.currentUser.uid;
 
   // Bind my 16-digit ID to my uid. Only the owner may later write to it.
   let claimed = false;
   for (let attempt = 0; attempt < 2 && !claimed; attempt++) {
     try {
-      await fb.set(fb.ref(db, `users/${state.myId}`), { uid: state.uid, registered: true });
+      await withTimeout(fb.set(fb.ref(db, `users/${state.myId}`), { uid: state.uid, registered: true }), 12000, "database timeout");
       claimed = true;
     } catch (e) {
       const denied = /permission_denied/i.test(`${e.code} ${e.message}`);
@@ -865,7 +875,10 @@ async function boot() {
     await initFirebase();
   } catch (e) {
     const m = `${e && e.code} ${e && e.message}`;
-    if (/permission_denied/i.test(m)) {
+    if (/timeout/i.test(m)) {
+      fatal(["> ERROR: COULD NOT REACH THE DATABASE (TIMED OUT).",
+             "> CHECK databaseURL IN FIREBASE_CONFIG (FIREBASE CONSOLE → REALTIME DATABASE → DATA TAB, URL AT THE TOP) AND THAT THE DATABASE WAS CREATED."]);
+    } else if (/permission_denied/i.test(m)) {
       fatal(["> ERROR: ACCESS DENIED BY DATABASE RULES.", "> PUBLISH database.rules.json IN FIREBASE CONSOLE → REALTIME DATABASE → RULES."]);
     } else if (/operation-not-allowed|admin-restricted/i.test(m)) {
       fatal(["> ERROR: ANONYMOUS SIGN-IN IS DISABLED.", "> ENABLE IT: FIREBASE CONSOLE → AUTHENTICATION → SIGN-IN METHOD → ANONYMOUS."]);
